@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+	<context:component-scan base-package="com.duoduo.jta.atomikos" />
+
+	<context:property-placeholder location="classpath:/*.properties" file-encoding="utf-8" />
+
+	<bean id="dataSource1" class="com.atomikos.jdbc.SimpleDataSourceBean" init-method="init" destroy-method="close">
+		<property name="uniqueResourceName" value="mysql/dataSource1" />
+		<property name="xaDataSourceClassName" value="com.mysql.jdbc.jdbc2.optional.MysqlXADataSource" />
+		<property name="xaDataSourceProperties" value="URL=jdbc:mysql://localhost:3306/jtatest1?user=root" />
+		<property name="exclusiveConnectionMode" value="true" />
+		<property name="connectionPoolSize" value="3" />
+		<property name="validatingQuery" value="select 1" />
+	</bean>
+
+	<bean id="dataSource2" class="com.atomikos.jdbc.SimpleDataSourceBean" init-method="init" destroy-method="close">
+		<property name="uniqueResourceName" value="mysql/dataSource2" />
+		<property name="xaDataSourceClassName" value="com.mysql.jdbc.jdbc2.optional.MysqlXADataSource" />
+		<property name="xaDataSourceProperties" value="URL=jdbc:mysql://localhost:3306/jtatest2?user=root" />
+		<property name="exclusiveConnectionMode" value="true" />
+		<property name="connectionPoolSize" value="3" />
+		<property name="validatingQuery" value="select 1" />
+	</bean>
+
+	<bean id="db1JdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource1" />
+	</bean>
+
+	<bean id="db2JdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource2" />
+	</bean>
+
+	<bean id="atomikosTransactionManager" class="com.atomikos.icatch.jta.UserTransactionManager" init-method="init"
+		destroy-method="close">
+		<property name="forceShutdown" value="true" />
+	</bean>
+
+	<bean id="txManager" class="org.springframework.transaction.jta.JtaTransactionManager">
+		<property name="userTransaction" ref="atomikosUserTransaction" />
+		<property name="transactionManager" ref="atomikosTransactionManager" />
+	</bean>
+
+	<bean id="atomikosUserTransaction" class="com.atomikos.icatch.jta.UserTransactionImp">
+		<property name="transactionTimeout" value="6000" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="txManager" proxy-target-class="true" />
+
+</beans>
